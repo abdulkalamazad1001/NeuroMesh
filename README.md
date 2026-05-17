@@ -579,5 +579,7 @@ Before pushing:
 Hackathon submission, all rights reserved until we pick a license post-event.
 
 ## Authors
-
-[Add your team here]
+Abdul Kalam Azad
+Mahak Agarwal
+Soham 
+Angan 
