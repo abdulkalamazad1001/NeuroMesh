@@ -36,7 +36,6 @@ class CameraSensorManager @Inject constructor(private val context: Context) {
 
             val imageAnalyzer = ImageAnalysis.Builder()
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
                 .build()
                 .also { analysis ->
                     analysis.setAnalyzer(analysisExecutor) { imageProxy ->
@@ -62,16 +61,15 @@ class CameraSensorManager @Inject constructor(private val context: Context) {
 
     private fun processFrame(imageProxy: ImageProxy) {
         try {
-            val buffer = imageProxy.planes[0].buffer
-            val bytes = ByteArray(buffer.remaining())
-            buffer.get(bytes)
-            val bitmap = Bitmap.createBitmap(
-                imageProxy.width,
-                imageProxy.height,
-                Bitmap.Config.ARGB_8888
-            )
-            bitmap.copyPixelsFromBuffer(java.nio.ByteBuffer.wrap(bytes))
+            val bitmap = imageProxy.toBitmap()
+            val oldBitmap = latestBitmap
             latestBitmap = scaleBitmap(bitmap, MAX_FRAME_SIZE)
+            if (oldBitmap != latestBitmap) {
+                oldBitmap?.recycle()
+            }
+            if (bitmap != latestBitmap) {
+                bitmap.recycle()
+            }
         } catch (e: Exception) {
             Logger.w(TAG, "Frame processing error: ${e.message}")
         } finally {
@@ -200,6 +198,8 @@ class CameraSensorManager @Inject constructor(private val context: Context) {
 
     companion object {
         private const val TAG = "CameraSensorManager"
-        private const val MAX_FRAME_SIZE = 224
+        // Reduced from 224 to 128. On 2GB devices, every large allocation in the
+        // camera path risks an LMK trigger during model init.
+        private const val MAX_FRAME_SIZE = 128
     }
 }

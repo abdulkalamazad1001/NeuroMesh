@@ -23,7 +23,7 @@ class MeshNetworkManager @Inject constructor(
 
     fun start() {
         nearbyConnections.startAdvertising(deviceId.take(16), Constants.SERVICE_ID)
-        nearbyConnections.startDiscovery(Constants.SERVICE_ID)
+        nearbyConnections.startDiscovery(Constants.SERVICE_ID, deviceId.take(16))
 
         scope.launch { collectIncomingPayloads() }
         scope.launch { collectConnectionEvents() }

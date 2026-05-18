@@ -35,8 +35,11 @@ class DeviceCapability @Inject constructor(private val context: Context) {
     }
 
     companion object {
-        // Empirically the smallest total RAM where Gemma 4 E2B q4 loads without
-        // being killed, leaving room for camera + mesh + the OS.
-        const val MIN_RAM_FOR_LLM_MB = 3800L
+        // Adjusted from 1800 to 3000. 
+        // 2GB (2048MB) total RAM is physically insufficient to load a 1.3GB LLM
+        // plus Android OS, Camera, and Mesh buffers without being killed.
+        // This ensures 2GB devices run stable in HEURISTIC mode, while 
+        // 4GB+ devices (which usually have ~3800MB available) can still use the LLM.
+        const val MIN_RAM_FOR_LLM_MB = 3000L
     }
 }

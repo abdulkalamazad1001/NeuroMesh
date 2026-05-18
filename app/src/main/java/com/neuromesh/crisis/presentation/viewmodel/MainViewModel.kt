@@ -70,9 +70,28 @@ class MainViewModel @Inject constructor(
             val canHostLlm = deviceCapability.canHostLlm()
             Logger.i(TAG, "Device RAM: ${ramMb}MB, canHostLlm=$canHostLlm")
 
+            environmentalSensorManager.startListening()
+            _uiState.value = UiState.Ready
+            startMesh()
+            startDetectionLoop()
+            collectMeshMessages()
+            collectConsensusEvents()
+
+            // DEFERRED LLM LOAD:
+            // High memory pressure during app startup is the main cause of the
+            // "black screen + close" crash on 2-6GB devices. By waiting until
+            // the UI is ready and sensors are active, we avoid the startup
+            // resource spike.
             if (canHostLlm) {
-                // Attempt LLM init, but a failure (incl. OOM) must NOT brick the
-                // app — fall back to heuristic + mesh-only so it still works.
+                Logger.i(TAG, "Waiting for system stabilization before LLM init...")
+                delay(3000)
+
+                if (ramMb < 2500L) {
+                    Logger.i(TAG, "Aggressive memory prep for low-RAM device")
+                    System.gc()
+                    delay(1000)
+                }
+
                 when (val result = modelRunner.initialize()) {
                     is Result.Success -> Logger.d(TAG, "Model initialized successfully")
                     is Result.Error -> Logger.w(
@@ -80,24 +99,7 @@ class MainViewModel @Inject constructor(
                         "Model init failed (${result.message}); running heuristic-only mode"
                     )
                 }
-            } else {
-                Logger.w(
-                    TAG,
-                    "Insufficient RAM for on-device LLM; running heuristic + mesh mode"
-                )
             }
-
-            // Either way the app is usable: heuristic detection always works and
-            // the device still participates in the mesh consensus.
-            // Accelerometer must be listening for the seismic gate/heuristic to
-            // ever fire (it was previously never started — earthquake detection
-            // silently never worked).
-            environmentalSensorManager.startListening()
-            _uiState.value = UiState.Ready
-            startMesh()
-            startDetectionLoop()
-            collectMeshMessages()
-            collectConsensusEvents()
         }
     }
 

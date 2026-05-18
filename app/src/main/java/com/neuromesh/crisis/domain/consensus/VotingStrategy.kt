@@ -46,7 +46,7 @@ class VotingStrategy @Inject constructor() {
             ConsensusResult.Disputed(
                 topCrisisType = dominantCrisis.key,
                 agreementRatio = crisisRatio.toFloat(),
-                avgConfidence = avgConfidence
+                avgConfidence = avgConfidence.toDouble()
             )
         }
     }

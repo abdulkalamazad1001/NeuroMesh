@@ -51,22 +51,29 @@ class EnvironmentalSensorManager @Inject constructor(context: Context) {
     }
 
     fun startListening() {
+        // Switch to SENSOR_DELAY_NORMAL for all sensors on low-end devices.
+        // SENSOR_DELAY_GAME causes high interrupt rates that consume CPU/Power
+        // and increase the risk of the system killing the process on 2GB RAM.
         sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)?.let {
-            sensorManager.registerListener(accelListener, it, SensorManager.SENSOR_DELAY_GAME)
+            sensorManager.registerListener(accelListener, it, SensorManager.SENSOR_DELAY_NORMAL)
         }
         sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE)?.let {
-            sensorManager.registerListener(object : SensorEventListener {
-                override fun onSensorChanged(event: SensorEvent) { latestPressure = event.values[0] }
-                override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
-            }, it, SensorManager.SENSOR_DELAY_NORMAL)
+            sensorManager.registerListener(pressureListener, it, SensorManager.SENSOR_DELAY_NORMAL)
         }
         sensorManager.getDefaultSensor(Sensor.TYPE_RELATIVE_HUMIDITY)?.let {
-            sensorManager.registerListener(object : SensorEventListener {
-                override fun onSensorChanged(event: SensorEvent) { latestHumidity = event.values[0] }
-                override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
-            }, it, SensorManager.SENSOR_DELAY_NORMAL)
+            sensorManager.registerListener(humidityListener, it, SensorManager.SENSOR_DELAY_NORMAL)
         }
-        Logger.d(TAG, "Sensor listeners registered")
+        Logger.d(TAG, "Sensor listeners registered (NORMAL delay)")
+    }
+
+    private val pressureListener = object : SensorEventListener {
+        override fun onSensorChanged(event: SensorEvent) { latestPressure = event.values[0] }
+        override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
+    }
+
+    private val humidityListener = object : SensorEventListener {
+        override fun onSensorChanged(event: SensorEvent) { latestHumidity = event.values[0] }
+        override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
     }
 
     fun readSensors(): String {
@@ -121,6 +128,8 @@ class EnvironmentalSensorManager @Inject constructor(context: Context) {
 
     fun stopListening() {
         sensorManager.unregisterListener(accelListener)
+        sensorManager.unregisterListener(pressureListener)
+        sensorManager.unregisterListener(humidityListener)
     }
 
     private fun Float.format(decimals: Int) = "%.${decimals}f".format(this)

@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.serialization)
 }
 
@@ -64,10 +65,6 @@ android {
             pickFirsts += setOf("**/*.so")
         }
     }
-
-    aaptOptions {
-        noCompress += "tflite"
-    }
 }
 
 dependencies {
@@ -79,11 +76,11 @@ dependencies {
     implementation(libs.androidx.fragment.ktx)
 
     implementation(libs.hilt.android)
-    kapt(libs.hilt.compiler)
+    ksp(libs.hilt.compiler)
 
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
-    kapt(libs.room.compiler)
+    ksp(libs.room.compiler)
 
     implementation(libs.camera.core)
     implementation(libs.camera.camera2)
@@ -113,6 +110,7 @@ dependencies {
     androidTestImplementation(libs.espresso.core)
 }
 
-kapt {
-    correctErrorTypes = true
+// No more kapt block needed for metadata
+hilt {
+    enableAggregatingTask = true
 }

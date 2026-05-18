@@ -85,7 +85,7 @@ class NearbyConnectionsWrapper @Inject constructor(private val context: Context)
             .addOnFailureListener { e -> Logger.e(TAG, "Advertising failed", e) }
     }
 
-    fun startDiscovery(serviceId: String) {
+    fun startDiscovery(serviceId: String, localDeviceName: String) {
         val options = DiscoveryOptions.Builder()
             .setStrategy(MESH_STRATEGY)
             .build()
@@ -94,7 +94,12 @@ class NearbyConnectionsWrapper @Inject constructor(private val context: Context)
             override fun onEndpointFound(endpointId: String, info: DiscoveredEndpointInfo) {
                 Logger.d(TAG, "Endpoint found: ${info.endpointName}")
                 _connectionEvents.trySend(ConnectionEvent.Discovered(endpointId, info.endpointName))
-                requestConnection(endpointId)
+                if (localDeviceName < info.endpointName) {
+                    Logger.d(TAG, "Initiating connection to ${info.endpointName} (local=$localDeviceName)")
+                    requestConnection(endpointId, localDeviceName)
+                } else {
+                    Logger.d(TAG, "Waiting for ${info.endpointName} to initiate connection (local=$localDeviceName)")
+                }
             }
 
             override fun onEndpointLost(endpointId: String) {
@@ -106,9 +111,8 @@ class NearbyConnectionsWrapper @Inject constructor(private val context: Context)
             .addOnFailureListener { e -> Logger.e(TAG, "Discovery failed", e) }
     }
 
-    private fun requestConnection(endpointId: String) {
-        val localName = android.os.Build.MODEL
-        connectionsClient.requestConnection(localName, endpointId, connectionLifecycleCallback)
+    private fun requestConnection(endpointId: String, localDeviceName: String) {
+        connectionsClient.requestConnection(localDeviceName, endpointId, connectionLifecycleCallback)
             .addOnSuccessListener { Logger.d(TAG, "Connection requested to $endpointId") }
             .addOnFailureListener { e -> Logger.w(TAG, "Connection request failed: $endpointId", e) }
     }
